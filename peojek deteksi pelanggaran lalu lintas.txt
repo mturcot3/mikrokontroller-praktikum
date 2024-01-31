@@ -1,0 +1,187 @@
+//Libraries Untuk Modul LCD dan I2C
+#include <Wire.h>  
+#include <LiquidCrystal_I2C.h> 
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+#define pinBuzzer 5
+#define pinLedMerah 15
+#define pinLedKuning 2
+#define pinLedHijau 4
+#define pinLedMerah2 26
+#define pinLedKuning2 27
+#define pinLedHijau2 14
+
+// Untuk Sensor Ultrasonik
+#define trig 13
+#define echo 12
+#define trig2 19
+#define echo2 18
+long durasi, jarak, durasi2, jarak2;
+
+int delayMerah = 5000;
+int delayMerah2 = 5000;
+int delayKuning = 1000;
+int delayKuning2 = 1000;
+int delayHijau = 5000;
+int delayHijau2 = 5000;
+int totalPelanggaran = 0;
+int jarakStandar = 20;
+
+void setup() {
+  lcd.init();   // iInit the LCD for 16 chars 2 lines
+  pinMode(trig, OUTPUT);    // set pin trig menjadi OUTPUT
+  pinMode(echo, INPUT);     // set pin echo menjadi INPUT
+  pinMode(trig2, OUTPUT);    // set pin trig menjadi OUTPUT
+  pinMode(echo2, INPUT);     // set pin echo menjadi INPUT
+  Serial.begin(9600);       // digunakan untuk komunikasi Serial dengan komputer
+  pinMode(pinBuzzer, OUTPUT);
+  pinMode(pinLedMerah, OUTPUT);
+  pinMode(pinLedKuning, OUTPUT);
+  pinMode(pinLedHijau, OUTPUT);
+    pinMode(pinLedMerah2, OUTPUT);
+  pinMode(pinLedKuning2, OUTPUT);
+  pinMode(pinLedHijau2, OUTPUT);
+}
+
+void loop() {
+  //LCD
+  updateLCD();
+
+  
+  // Lampu merah menyala
+  digitalWrite(pinLedMerah, HIGH);
+    digitalWrite(pinLedMerah2, LOW);
+  digitalWrite(pinLedHijau2, HIGH);
+    digitalWrite(pinLedHijau, LOW);
+  // Selama lampu merah menyala
+  // Harus dicek jarak secara realtime
+  cekJarak("merah");
+//  delay(delayMerah);
+ digitalWrite(pinLedHijau2, LOW);
+  digitalWrite(pinLedKuning, LOW);
+digitalWrite(pinLedKuning2, HIGH);
+  cekJarak2("kuning2");
+
+delay(delayKuning2);
+    digitalWrite(pinLedHijau, HIGH);
+  digitalWrite(pinLedMerah, LOW);
+    digitalWrite(pinLedKuning2, LOW);
+  // Lampu Hijau menyala selama 5 detik
+  digitalWrite(pinLedMerah2, HIGH);
+  cekJarak2("merah2");
+//  digitalWrite(pinLedHijau, HIGH);
+  delay(delayHijau);
+
+  // Lampu Hijau dimatikan
+  // Persiapan menuju lampu kuning
+  digitalWrite(pinLedMerah2, HIGH);
+  digitalWrite(pinLedKuning, HIGH);
+  digitalWrite(pinLedKuning2, LOW);
+    digitalWrite(pinLedHijau, LOW);
+  cekJarak("kuning");
+  delay(delayKuning);
+    digitalWrite(pinLedMerah2, LOW);
+  digitalWrite(pinLedHijau, LOW);
+  digitalWrite(pinLedKuning, LOW);
+  digitalWrite(pinLedHijau2, HIGH);
+    // Menyalakan Lampu kuning
+  // Persiapan MenujuLampuHijau
+  //digitalWrite(pinLedKuning, HIGH);
+  // Lampu kuning tetap ga boleh ada yg nerobos
+  //cekJarak("kuning");
+
+  
+  
+
+}
+
+void buzzerOn() {
+  digitalWrite(pinBuzzer, HIGH);
+  totalPelanggaran = totalPelanggaran + 1;
+  updateLCD();
+}
+
+void buzzerOff() {
+  digitalWrite(pinBuzzer, LOW);
+}
+
+void updateLCD() {
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Total Pelanggar");
+  lcd.setCursor(0,1);
+  lcd.print(totalPelanggaran);
+}
+
+void cekJarak(String warna) {
+  int warnaFix;
+  
+   // program dibawah ini agar trigger memancarakan suara ultrasonic]
+   if (warna == "merah"){
+    int delayMerahFix = round(delayMerah/24);
+    warnaFix = delayMerahFix;
+   } else if (warna == "kuning") {
+    int delayKuningFix = round(delayKuning/16);
+    warnaFix = delayKuningFix;
+   }
+    int t=0;
+    int batas = warnaFix-2;
+    while (t<warnaFix) {
+          digitalWrite(trig, LOW);
+          delayMicroseconds(8);
+          digitalWrite(trig, HIGH);
+          delayMicroseconds(8);
+          digitalWrite(trig, LOW);
+          delayMicroseconds(8);
+      
+          durasi= pulseIn(echo, HIGH);  // menerima suara ultrasonic
+          jarak= (durasi/2) / 29.1;     // mengubah durasi menjadi jarak (cm)
+          Serial.print("Jarak : ");
+          Serial.print(jarak);        // menampilkan jarak pada Serial Monitor  
+          Serial.println(" cm ");
+
+        if (jarak < jarakStandar && t<batas) {
+          buzzerOn();
+        }
+        if (jarak > jarakStandar || t>batas) {
+          buzzerOff();
+        }
+        t=t+1;
+    }
+}      
+void cekJarak2(String warna2) {
+  int warna2Fix;
+  
+   // program dibawah ini agar trigger memancarakan suara ultrasonic]
+   if (warna2 == "merah2"){
+    int delayMerah2Fix = round(delayMerah2/24);
+    warna2Fix = delayMerah2Fix;
+   } else if (warna2 == "kuning2") {
+    int delayKuning2Fix = round(delayKuning2/16);
+    warna2Fix = delayKuning2Fix;
+   }
+
+    int t2=0;
+    int batas2 = warna2Fix-2;
+    while (t2<warna2Fix) {
+          digitalWrite(trig2, LOW);
+          delayMicroseconds(8);
+          digitalWrite(trig2, HIGH);
+          delayMicroseconds(8);
+          digitalWrite(trig2, LOW);
+          delayMicroseconds(8);
+      
+          durasi2= pulseIn(echo2, HIGH);  // menerima suara ultrasonic
+          jarak2= (durasi2/2) / 29.1;     // mengubah durasi menjadi jarak (cm)
+          Serial.print("Jarak2 : ");
+          Serial.print(jarak2);        // menampilkan jarak pada Serial Monitor  
+          Serial.println(" cm ");
+
+        if (jarak2 < jarakStandar && t2<batas2) {
+          buzzerOn();
+        }
+        if (jarak2 > jarakStandar || t2>batas2) {
+          buzzerOff();
+        }
+        t2=t2+1;
+    }
+}
